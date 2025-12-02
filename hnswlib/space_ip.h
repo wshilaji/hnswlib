@@ -209,6 +209,13 @@ InnerProductDistanceSIMD16ExtAVX512(const void *pVect1v, const void *pVect2v, co
 
 static float
 InnerProductSIMD16ExtAVX(const void *pVect1v, const void *pVect2v, const void *qty_ptr) {
+    // dysNote 一个 __m256 =8个float
+    /* 定义了一个32字节对齐的浮点数数组： 就是数组 长度是32个字节。[8] 则一个是4个字节
+    内存地址:    0    4    8    12   16   20   24   28
+                |----|----|----|----|----|----|----|----|
+    TmpRes:   [0]  [1]  [2]  [3]  [4]  [5]  [6]  [7]
+                |-------------- 32字节 ----------------| 
+    */
     float PORTABLE_ALIGN32 TmpRes[8];
     float *pVect1 = (float *) pVect1v;
     float *pVect2 = (float *) pVect2v;
@@ -236,7 +243,8 @@ InnerProductSIMD16ExtAVX(const void *pVect1v, const void *pVect2v, const void *q
         pVect2 += 8;
         sum256 = _mm256_add_ps(sum256, _mm256_mul_ps(v1, v2));
     }
-
+    // sum256 = [sum0, sum1, sum2, sum3, sum4, sum5, sum6, sum7]
+    // 但是 AVX 指令集没有直接的 "水平求和8个浮点数" 的指令，所以需要先提取到数组，然后再相加。
     _mm256_store_ps(TmpRes, sum256);
     float sum = TmpRes[0] + TmpRes[1] + TmpRes[2] + TmpRes[3] + TmpRes[4] + TmpRes[5] + TmpRes[6] + TmpRes[7];
 

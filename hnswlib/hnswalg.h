@@ -13,7 +13,40 @@
 namespace hnswlib {
 typedef unsigned int tableint;
 typedef unsigned int linklistsizeint;
+/*
+NSW的 有几个需要注意的地方。 一个是从EnterPoint是随机一个点到需要query的点路径寻找的时候 按照Greedy_Search算法有可能是局部最小值而不是全局最小值。
+所以就多找几个 EnterPoint 然后Multi_Search。按照论文取m= 5， the result probability is 99.985%
+Greedy_Search(q: object, venter_point: object)
+1 vcurr ← venter_point;
+2 σmin ← σ(q, vcurr); vnext ← NIL;
+3 foreach vfriend ∈ vcurr.getFriends() do
+4 if σfr ← σ(query, vfriend) < σmin then
+5 σmin ← σfr;
+6 vnext ← vfriend;
+7 if vnext = Nil then return vcurr;
+8 else return Greedy_Search(q, vnext);
 
+Multi_Search(object q, integer: m)
+1 results: SET[objects];
+2 for (i ← 0; i < m; i++) do
+3 entry_point ← getRandomEntryPoint();
+4 local_min ← Greedy_Search(query, entry_point)
+5 if local_min ∉ results then
+6 results.add(result);
+7 return results 
+
+NSW的build构造这个图。 是有一个新点就添加进来。 当作query点。然后取k个最近的与之建立连接 w就是Multi_Search里的m
+Nearest_Neighbor_Add(object: new_object, integer: k, integer: w)
+1 SET[object]: localMins ← Multi_Search (new_object, w);
+2 SET[object]: u ← ∅ ; //neighborhood;
+3 foreach object: local_min ∈ localMins do
+4 u ← u ∪ local_min.getFriends();
+6 sort the set u so to satisfy the condition σ (u[i],
+new_object) < σ (u[i+1], new_object)
+7 for (I ← 0; i < k; i++) do
+8 u[i].connect(new_object);
+9 new_object.connect(u[i]); 
+ */
 template<typename dist_t>
 class HierarchicalNSW : public AlgorithmInterface<dist_t> {
  public:
