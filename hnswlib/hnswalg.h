@@ -254,7 +254,27 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
     size_t getDeletedCount() {
         return num_deleted_;
     }
-
+    /*
+    SEARCH-LAYER(q, ep, ef, lc)
+    Input: query element q, enter points ep, number of nearest to q elements to return ef, layer number lc
+    v ← ep // set of visited elements
+    C ← ep // set of candidates
+    W ← ep // dynamic list of found nearest neighbors
+    while │C│ > 0 // dysNote 就是bfs 只不过是变种。先遍历最近的点
+        c ← extract nearest element from C to q
+        f ← get furthest element from W to q
+        if distance(c, q) > distance(f, q)
+            break // all elements in W are evaluated
+        for each e ∈ neighbourhood(c) at layer lc // update C and W
+            if e ∉ v
+                v ← v ⋃ e
+                f ← get furthest element from W to q
+            if distance(e, q) < distance(f, q) or │W│ < ef
+                C ← C ⋃ e
+                W ← W ⋃ e
+                if │W│ > ef
+                    remove furthest element from W to q
+    return W */
     std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst>
     searchBaseLayer(tableint ep_id, const void *data_point, int layer) {
         VisitedList *vl = visited_list_pool_->getFreeVisitedList();
