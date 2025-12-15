@@ -47,7 +47,7 @@ new_object) < σ (u[i+1], new_object)
 8 u[i].connect(new_object);
 9 new_object.connect(u[i]); 
  */
-template<typename dist_t>
+template<typename dist_t> // L2,或
 class HierarchicalNSW : public AlgorithmInterface<dist_t> {
  public:
     static const tableint MAX_LABEL_OPERATION_LOCKS = 65536;
@@ -535,14 +535,17 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         std::priority_queue<std::pair<dist_t, tableint>> queue_closest;
         std::vector<std::pair<dist_t, tableint>> return_list;
         while (top_candidates.size() > 0) {
-            queue_closest.emplace(-top_candidates.top().first, top_candidates.top().second);
+            queue_closest.emplace(-top_candidates.top().first, top_candidates.top().second); //小根堆, 通过取负数来实现
             top_candidates.pop();
         }
 
+        //但在 2016 年原始论文和后续开源实现（如 hnswlib）中，Heuristic 模式默认仍然只按距离选！
+        //也就是说：即使叫 “heuristic”，实际行为和 Simple 几乎一样。Wd 和 keepPrunedConnections 在当前主流实现中基本是“未激活的骨架代码”。
+        // fstdistfunc_是想用这个弄多样性 . 其实和直接pop M个一样。如果fstdistfunc_仍然这是算距离的话
         while (queue_closest.size()) {
             if (return_list.size() >= M)
                 break;
-            std::pair<dist_t, tableint> curent_pair = queue_closest.top();
+            std::pair<dist_t, tableint> curent_pair = queue_closest.top(); // tableint 是内部结点id
             dist_t dist_to_query = -curent_pair.first;
             queue_closest.pop();
             bool good = true;
