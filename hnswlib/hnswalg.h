@@ -194,7 +194,7 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         visited_list_pool_.reset(nullptr);
     }
 
-
+    // 这是大根堆
     struct CompareByFirst {
         constexpr bool operator()(std::pair<dist_t, tableint> const& a,
             std::pair<dist_t, tableint> const& b) const noexcept {
@@ -491,8 +491,40 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
         visited_list_pool_->releaseVisitedList(vl);
         return top_candidates;
     }
+    // # 论文上这个v1版本太垃圾了。 完全是废物 上面这段从candidates中取出他的邻居push进来还没问题。就这算启发？
+    // 因为有可能真正离的近的在邻居上。 origin_cand是局部最优解 但是后半段完全是脱裤子放屁
+    // cand排序后. push了R[0], 之后在push无论如何all_closer都是false .然后在从discard里面取最近的 这和直接cand.sort后取最近的一样。 论文原本垃圾
+    /*def selectNeighborsV1(q, candidates, M, extend=true):
+        R = []  # 结果
+        candidates.sort(key=lambda x: dist(q, x))
+        # 扩展候选集（如果开启）
+        if extend:
+            extended = set(candidates)
+            for e in candidates:
+                extended.update(e.neighbors)
+            candidates = sorted(list(extended), key=lambda x: dist(q, x))
+        discard = []  # 被丢弃的
+        for e in candidates:      //没看懂啊 理论上R[0]是push进来最近的。所以只会有R[0]
+            if len(R) < M:
+                # 检查：e是否比R中所有点都更接近q？
+                all_closer = all(dist(e, q) < dist(r, q) for r in R)      //太严格了！可能选不到足够的邻居。
+                if all_closer:
+                    R.append(e)
+                else:
+                    discard.append(e)
+            else:
+                break
+        # 如果R不够M，从discard中补充
+        if len(R) < M:
+            need = M - len(R)
+            R.extend(discard[:need]) // 但是这还是拍过序的最近的
 
+        return R
+     * */
 
+    
+    //SELECT-NEIGHBORS-SIMPLE(q, C, M) { return neighbors[:M] } // 这种方式可能所有M个邻居都在同一方向，导致图局部聚集
+    //ef是selectLayer的num候选集数量num,  M是select_neighbors_heuristic的num
     void getNeighborsByHeuristic2(
         std::priority_queue<std::pair<dist_t, tableint>, std::vector<std::pair<dist_t, tableint>>, CompareByFirst> &top_candidates,
         const size_t M) {
@@ -1043,8 +1075,33 @@ class HierarchicalNSW : public AlgorithmInterface<dist_t> {
             updatePoint(data_point, internal_id_replaced, 1.0);
         }
     }
-
-
+/*
+ * INSERT
+def INSERT(q, M, efConstruction, mL):    // searchLayer的返回的个数num是efConstruction这个变量
+    # 1. 为新节点q确定最高层l
+    l = floor(-ln(random()) * mL)  # 随机层级，指数分布
+    # 2. 从顶层开始，逐层找到每层的近邻作为入口点
+    ep = 随机入口点
+    for lc in range(top_layer, l+1, -1):  # 从高层到l层
+        W = SEARCH-LAYER(q, ep, ef=1, l=lc)  # 只要最近的一个
+        ep = W[0]  # 最近点作为下一层入口
+    # 3. 从层l到第0层，逐层插入并建立连接
+    for lc in range(min(l, top_layer), -1, -1):  # 从l层到0层
+        # 找到efConstruction个候选近邻
+        neighbors = SEARCH-LAYER(q, ep, efConstruction, lc)
+        # 从中选择M个作为q在该层的连接
+        q_conn = SELECT_NEIGHBORS(q, neighbors, M, lc) // // alg. 3 or alg. 4
+        # 建立双向连接
+        for e in q_conn:
+            add_edge(q, e, lc)
+            add_edge(e, q, lc)
+            # 如果e的连接数超过M，需要修剪
+            if len(e.neighbors[lc]) > M:
+                e_conn = SELECT_NEIGHBORS(e, e.neighbors[lc], M, lc)
+                e.neighbors[lc] = e_conn
+        # 更新下一层的入口点
+        ep = neighbors[0] if neighbors else ep
+*/
     void updatePoint(const void *dataPoint, tableint internalId, float updateNeighborProbability) {
         // update the feature vector associated with existing point with new vector
         memcpy(getDataByInternalId(internalId), dataPoint, data_size_);
